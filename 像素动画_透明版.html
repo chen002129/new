@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Clawd 像素工坊 | 透明GIF导出</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        body {
+            background: #1a2a32;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: #fef2dc;
+            border-radius: 1.5rem;
+            box-shadow: 8px 8px 0 #b95f2c;
+            padding: 1.2rem;
+            border: 3px solid #ffcd94;
+        }
+        h1 {
+            font-size: 1.3rem;
+            text-align: center;
+            color: #e25822;
+            text-shadow: 2px 2px 0 #ffcd94;
+            background: #fff0c0;
+            display: inline-block;
+            margin: 0 auto 0.5rem;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+        }
+        .sub {
+            text-align: center;
+            font-size: 0.6rem;
+            background: #2c5a6e;
+            color: #ffe0a0;
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 2rem;
+            margin-bottom: 0.8rem;
+        }
+        .two-columns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .editor-card {
+            background: #fff5e6;
+            border-radius: 1rem;
+            padding: 0.8rem;
+            flex: 1;
+            min-width: 260px;
+            border: 2px solid #e25822;
+        }
+        .canvas-area {
+            background: #d9cba3;
+            border-radius: 0.8rem;
+            padding: 0.5rem;
+            text-align: center;
+        }
+        canvas {
+            background: #8bcb8c;
+            border-radius: 0.5rem;
+            box-shadow: 0 0 0 3px #ffcd94;
+            max-width: 100%;
+            cursor: crosshair;
+            display: block;
+            margin: 0 auto;
+        }
+        /* 透明背景格子 */
+        .transparent-bg {
+            background: repeating-conic-gradient(#fbe5b9 0% 25%, #e8d5a5 0% 50%) 50% / 16px 16px !important;
+        }
+        #characterCanvas {
+            cursor: pointer;
+        }
+        .info-text {
+            font-size: 0.65rem;
+            margin: 0.4rem 0;
+            color: #a55a2a;
+            text-align: center;
+        }
+        button {
+            background: #e25822;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #7e3a1a;
+            margin: 0.2rem;
+            font-size: 0.8rem;
+        }
+        button:hover { background: #ff6b35; }
+        button.secondary {
+            background: #5f7f8c;
+            box-shadow: 0 3px 0 #2c4a5e;
+        }
+        button.success {
+            background: #27ae60;
+            box-shadow: 0 3px 0 #1e8449;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        button:active {
+            transform: translateY(2px);
+        }
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 0.8rem 0;
+        }
+        select {
+            background: #fef0c0;
+            border: 2px solid #e25822;
+            padding: 0.4rem 0.6rem;
+            border-radius: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .preview-box {
+            background: repeating-conic-gradient(#5c9e5e 0% 25%, #4a8a4c 0% 50%) 50% / 20px 20px;
+            border-radius: 0.8rem;
+            padding: 0.5rem;
+            text-align: center;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 0.6rem 0;
+            flex-wrap: wrap;
+        }
+        .slider-row label {
+            font-size: 0.65rem;
+            color: #a55a2a;
+        }
+        input[type="range"] {
+            width: 140px;
+            cursor: pointer;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.55rem;
+            margin-top: 0.8rem;
+            color: #9e7a56;
+        }
+        .error-msg {
+            color: #c0392b;
+            background: #ffddcc;
+            padding: 0.4rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .success-msg {
+            color: #27ae60;
+            background: #d5f5e3;
+            padding: 0.4rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .download-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+            display: none;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e25822, #ff6b35);
+            width: 0%;
+            transition: width 0.2s;
+        }
+        .clawd-preset {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 0.5rem 0;
+            flex-wrap: wrap;
+        }
+        .preset-btn {
+            background: #ffcd94;
+            color: #8b4513;
+            font-size: 0.7rem;
+            padding: 0.4rem 0.8rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="text-align: center;">
+        <h1>🦀 CLAWD PIXEL LAB</h1>
+        <div class="sub">✦ 透明背景GIF ✦ 仅导出角色 ✦ 无页面元素</div>
+    </div>
+
+    <!-- 预设Clawd角色 -->
+    <div class="clawd-preset">
+        <span style="font-size:0.7rem;color:#a55a2a;">快速开始:</span>
+        <button class="preset-btn" onclick="loadClawdPreset()">🦀 加载Clawd</button>
+        <button class="preset-btn" onclick="loadClawd2Preset()">🦀 Clawd II</button>
+    </div>
+
+    <div class="two-columns">
+        <!-- 左侧 -->
+        <div class="editor-card">
+            <div class="canvas-area">
+                <canvas id="sourceCanvas" width="320" height="320"></canvas>
+            </div>
+            <div class="info-text">
+                📸 上传图片或加载预设 → 框选主体 → 像素化
+            </div>
+            <div style="display: flex; justify-content: center; gap: 0.3rem; flex-wrap: wrap;">
+                <button id="uploadBtn">📤 上传</button>
+                <button id="cropBtn" class="secondary" disabled>🎨 像素化</button>
+                <button id="resetCropBtn" class="secondary">🗑️ 重置</button>
+                <input type="file" id="fileInput" accept="image/*" style="display:none">
+            </div>
+            <div class="slider-row">
+                <label>🔲 像素块:</label>
+                <input type="range" id="pixelSizeSlider" min="8" max="128" step="4" value="32">
+                <span id="pixelSizeValue" style="font-size:0.65rem;">32px</span>
+            </div>
+            <div class="slider-row">
+                <label>🎨 量化:</label>
+                <input type="range" id="quantizeSlider" min="2" max="8" step="1" value="4">
+                <span id="quantizeValue" style="font-size:0.65rem;">4级</span>
+            </div>
+            <div style="display: flex; justify-content: center;">
+                <button id="repixelBtn" class="secondary">🔄 重新像素化</button>
+            </div>
+        </div>
+
+        <!-- 右侧 -->
+        <div class="editor-card">
+            <div class="canvas-area">
+                <canvas id="characterCanvas" width="128" height="128" class="transparent-bg" style="image-rendering:pixelated;"></canvas>
+            </div>
+            <div class="info-text">👆 点击图片去除背景（透明底）</div>
+            <div class="slider-row">
+                <label>🧹 容差:</label>
+                <input type="range" id="toleranceSlider" min="0" max="100" step="5" value="30">
+                <span id="toleranceValue" style="font-size:0.65rem;">30</span>
+            </div>
+            <div class="action-bar">
+                <select id="actionSelect">
+                    <option value="idle">⭐ 待机浮动</option>
+                    <option value="walk">🚶 左右摇摆</option>
+                    <option value="jump">🦘 上下弹跳</option>
+                </select>
+                <button id="playAnimBtn">▶️ 播放</button>
+            </div>
+            
+            <div class="download-options">
+                <button id="downloadGifBtn" class="success">📥 透明GIF (仅角色)</button>
+                <button id="downloadPngBtn" class="secondary">🖼️ PNG</button>
+            </div>
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="preview-box">
+                <canvas id="animCanvas" width="300" height="300" style="width:100%; max-width:280px; image-rendering:pixelated;"></canvas>
+            </div>
+            
+            <div id="statusMsg" class="error-msg"></div>
+            <div id="successMsg" class="success-msg"></div>
+        </div>
+    </div>
+    <footer>💡 下载的GIF只有角色主体，透明背景，无页面元素</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+<script>
+    // DOM
+    const sourceCanvas = document.getElementById('sourceCanvas');
+    const srcCtx = sourceCanvas.getContext('2d');
+    const characterCanvas = document.getElementById('characterCanvas');
+    const charCtx = characterCanvas.getContext('2d');
+    const animCanvas = document.getElementById('animCanvas');
+    const animCtx = animCanvas.getContext('2d');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const cropBtn = document.getElementById('cropBtn');
+    const resetCropBtn = document.getElementById('resetCropBtn');
+    const repixelBtn = document.getElementById('repixelBtn');
+    const pixelSizeSlider = document.getElementById('pixelSizeSlider');
+    const pixelSizeValue = document.getElementById('pixelSizeValue');
+    const quantizeSlider = document.getElementById('quantizeSlider');
+    const quantizeValue = document.getElementById('quantizeValue');
+    const toleranceSlider = document.getElementById('toleranceSlider');
+    const toleranceValue = document.getElementById('toleranceValue');
+    const actionSelect = document.getElementById('actionSelect');
+    const playAnimBtn = document.getElementById('playAnimBtn');
+    const downloadGifBtn = document.getElementById('downloadGifBtn');
+    const downloadPngBtn = document.getElementById('downloadPngBtn');
+    const statusMsg = document.getElementById('statusMsg');
+    const successMsg = document.getElementById('successMsg');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+
+    // 状态
+    let originalImageElement = null;
+    let currentRawSelection = null;
+    let currentPixelImageData = null;
+    let currentFrames = [];
+    let animFrameId = null;
+    let isAnimating = false;
+    let selection = { x: 0, y: 0, w: 0, h: 0, active: false };
+    let isDragging = false;
+    let startX, startY;
+
+    const GIF_SIZE = 300;
+    animCanvas.width = GIF_SIZE;
+    animCanvas.height = GIF_SIZE;
+
+    // 显示消息
+    function showStatus(msg, isError = true) {
+        if (isError) {
+            statusMsg.textContent = msg;
+            statusMsg.style.display = 'block';
+            successMsg.style.display = 'none';
+        } else {
+            successMsg.textContent = msg;
+            successMsg.style.display = 'block';
+            statusMsg.style.display = 'none';
+        }
+        setTimeout(() => {
+            statusMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+        }, 4000);
+    }
+
+    function showProgress(percent) {
+        progressBar.style.display = 'block';
+        progressFill.style.width = percent + '%';
+        if (percent >= 100) {
+            setTimeout(() => { progressBar.style.display = 'none'; }, 500);
+        }
+    }
+
+    // 滑块
+    pixelSizeSlider.addEventListener('input', () => pixelSizeValue.innerText = pixelSizeSlider.value + 'px');
+    quantizeSlider.addEventListener('input', () => quantizeValue.innerText = quantizeSlider.value + '级');
+    toleranceSlider.addEventListener('input', () => toleranceValue.innerText = toleranceSlider.value);
+
+    // ========== 预设Clawd像素角色 ==========
+    function createClawdImageData() {
+        // 创建64x64的小螃蟹像素图
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        
+        // 身体 - 橙色
+        ctx.fillStyle = '#FF6347';
+        ctx.fillRect(16, 24, 32, 24);
+        
+        // 钳子 - 红色
+        ctx.fillStyle = '#FF4500';
+        ctx.fillRect(4, 20, 12, 16);
+        ctx.fillRect(48, 20, 12, 16);
+        ctx.fillRect(0, 16, 8, 12);
+        ctx.fillRect(56, 16, 8, 12);
+        
+        // 眼睛
+        ctx.fillStyle = 'white';
+        ctx.fillRect(20, 12, 8, 10);
+        ctx.fillRect(36, 12, 8, 10);
+        ctx.fillStyle = 'black';
+        ctx.fillRect(22, 14, 4, 6);
+        ctx.fillRect(38, 14, 4, 6);
+        
+        // 腿
+        ctx.fillStyle = '#FF6347';
+        ctx.fillRect(12, 44, 6, 12);
+        ctx.fillRect(22, 44, 6, 12);
+        ctx.fillRect(36, 44, 6, 12);
+        ctx.fillRect(46, 44, 6, 12);
+        
+        // 嘴巴
+        ctx.fillStyle = '#8B0000';
+        ctx.fillRect(28, 36, 8, 4);
+        
+        return ctx.getImageData(0, 0, 64, 64);
+    }
+    
+    function createClawd2ImageData() {
+        // 创建64x64的另一种小螃蟹
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        
+        // 圆身体
+        ctx.fillStyle = '#E25822';
+        ctx.beginPath();
+        ctx.arc(32, 36, 18, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 大钳子
+        ctx.fillStyle = '#D35400';
+        ctx.fillRect(0, 24, 16, 20);
+        ctx.fillRect(48, 24, 16, 20);
+        ctx.fillStyle = '#A04000';
+        ctx.fillRect(0, 18, 12, 10);
+        ctx.fillRect(52, 18, 12, 10);
+        
+        // 眼睛
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(26, 18, 6, 0, Math.PI * 2);
+        ctx.arc(38, 18, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(26, 18, 3, 0, Math.PI * 2);
+        ctx.arc(38, 18, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 腮红
+        ctx.fillStyle = '#FFB6C1';
+        ctx.beginPath();
+        ctx.arc(20, 38, 5, 0, Math.PI * 2);
+        ctx.arc(44, 38, 5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        return ctx.getImageData(0, 0, 64, 64);
+    }
+
+    window.loadClawdPreset = function() {
+        currentRawSelection = createClawdImageData();
+        originalImageElement = new Image();
+        cropBtn.disabled = false;
+        selection.active = true;
+        selection.x = 0; selection.y = 0; selection.w = 64; selection.h = 64;
+        
+        // 直接像素化
+        const pxSize = parseInt(pixelSizeSlider.value);
+        const quant = parseInt(quantizeSlider.value);
+        const pixelated = pixelateWithSettings(currentRawSelection, pxSize, quant);
+        currentPixelImageData = pixelated;
+        for (let i = 3; i < currentPixelImageData.data.length; i += 4) currentPixelImageData.data[i] = 255;
+        drawToCanvas(currentPixelImageData, characterCanvas, 128);
+        
+        // 显示到源画布
+        srcCtx.fillStyle = '#8bcb8c';
+        srcCtx.fillRect(0, 0, 320, 320);
+        srcCtx.drawImage(characterCanvas, 128, 128, 64, 64);
+        
+        refreshAnimation();
+        showStatus('Clawd已加载！点击「📥 透明GIF」导出', false);
+    };
+    
+    window.loadClawd2Preset = function() {
+        currentRawSelection = createClawd2ImageData();
+        originalImageElement = new Image();
+        cropBtn.disabled = false;
+        selection.active = true;
+        
+        const pxSize = parseInt(pixelSizeSlider.value);
+        const quant = parseInt(quantizeSlider.value);
+        const pixelated = pixelateWithSettings(currentRawSelection, pxSize, quant);
+        currentPixelImageData = pixelated;
+        for (let i = 3; i < currentPixelImageData.data.length; i += 4) currentPixelImageData.data[i] = 255;
+        drawToCanvas(currentPixelImageData, characterCanvas, 128);
+        
+        srcCtx.fillStyle = '#8bcb8c';
+        srcCtx.fillRect(0, 0, 320, 320);
+        srcCtx.drawImage(characterCanvas, 128, 128, 64, 64);
+        
+        refreshAnimation();
+        showStatus('Clawd II 已加载！', false);
+    };
+
+    // ========== 原有功能 ==========
+    function redrawDisplay() {
+        if (!originalImageElement) return;
+        const img = originalImageElement;
+        const w = img.width, h = img.height;
+        const scale = Math.min(320 / w, 320 / h);
+        const dw = w * scale;
+        const dh = h * scale;
+        srcCtx.clearRect(0, 0, 320, 320);
+        srcCtx.fillStyle = "#8bcb8c";
+        srcCtx.fillRect(0, 0, 320, 320);
+        srcCtx.drawImage(img, (320 - dw) / 2, (320 - dh) / 2, dw, dh);
+        
+        if (selection.active && selection.w > 5 && selection.h > 5) {
+            srcCtx.save();
+            srcCtx.globalAlpha = 0.4;
+            srcCtx.fillStyle = "#ffaa66";
+            srcCtx.fillRect(selection.x, selection.y, selection.w, selection.h);
+            srcCtx.globalAlpha = 1;
+            srcCtx.strokeStyle = "#e25822";
+            srcCtx.lineWidth = 2;
+            srcCtx.setLineDash([5, 5]);
+            srcCtx.strokeRect(selection.x, selection.y, selection.w, selection.h);
+            srcCtx.restore();
+        }
+    }
+
+    function getMousePos(e) {
+        const rect = sourceCanvas.getBoundingClientRect();
+        const scaleX = 320 / rect.width;
+        const scaleY = 320 / rect.height;
+        let clientX, clientY;
+        if (e.touches && e.touches.length) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        return {
+            x: Math.min(Math.max(0, (clientX - rect.left) * scaleX), 320),
+            y: Math.min(Math.max(0, (clientY - rect.top) * scaleY), 320)
+        };
+    }
+
+    function onStart(e) {
+        if (!originalImageElement) return;
+        e.preventDefault();
+        const pos = getMousePos(e);
+        startX = pos.x;
+        startY = pos.y;
+        isDragging = true;
+        selection.active = false;
+        redrawDisplay();
+    }
+
+    function onMove(e) {
+        if (!isDragging || !originalImageElement) return;
+        e.preventDefault();
+        const pos = getMousePos(e);
+        const x = Math.min(startX, pos.x);
+        const y = Math.min(startY, pos.y);
+        const w = Math.abs(pos.x - startX);
+        const h = Math.abs(pos.y - startY);
+        if (w > 5 && h > 5) {
+            selection = { x, y, w, h, active: true };
+        }
+        redrawDisplay();
+    }
+
+    function onEnd(e) {
+        isDragging = false;
+        if (selection.active && (selection.w < 10 || selection.h < 10)) {
+            selection.active = false;
+            redrawDisplay();
+        }
+    }
+
+    sourceCanvas.addEventListener('mousedown', onStart);
+    sourceCanvas.addEventListener('mousemove', onMove);
+    sourceCanvas.addEventListener('mouseup', onEnd);
+    sourceCanvas.addEventListener('mouseleave', onEnd);
+    sourceCanvas.addEventListener('touchstart', onStart, { passive: false });
+    sourceCanvas.addEventListener('touchmove', onMove, { passive: false });
+    sourceCanvas.addEventListener('touchend', onEnd);
+
+    resetCropBtn.addEventListener('click', () => {
+        selection.active = false;
+        redrawDisplay();
+    });
+
+    function getCleanSelection() {
+        if (!originalImageElement || !selection.active) return null;
+        const { x, y, w, h } = selection;
+        if (w < 8 || h < 8) return null;
+        
+        const img = originalImageElement;
+        const scale = Math.min(320 / img.width, 320 / img.height);
+        const dw = img.width * scale;
+        const dh = img.height * scale;
+        const offsetX = (320 - dw) / 2;
+        const offsetY = (320 - dh) / 2;
+        
+        const imgX = (x - offsetX) / scale;
+        const imgY = (y - offsetY) / scale;
+        const imgW = w / scale;
+        const imgH = h / scale;
+        
+        const sx = Math.max(0, Math.min(imgX, img.width));
+        const sy = Math.max(0, Math.min(imgY, img.height));
+        const sw = Math.min(imgW, img.width - sx);
+        const sh = Math.min(imgH, img.height - sy);
+        if (sw < 4 || sh < 4) return null;
+        
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = sw;
+        tempCanvas.height = sh;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+        return tempCtx.getImageData(0, 0, sw, sh);
+    }
+
+    function pixelateWithSettings(imageData, targetSize, quantizeLevels) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = targetSize;
+        tempCanvas.height = targetSize;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.imageSmoothingEnabled = false;
+        const srcCanvas = document.createElement('canvas');
+        srcCanvas.width = imageData.width;
+        srcCanvas.height = imageData.height;
+        srcCanvas.getContext('2d').putImageData(imageData, 0, 0);
+        tempCtx.drawImage(srcCanvas, 0, 0, targetSize, targetSize);
+        let pixelData = tempCtx.getImageData(0, 0, targetSize, targetSize);
+        const data = pixelData.data;
+        const levels = Math.max(2, quantizeLevels);
+        for (let i = 0; i < data.length; i += 4) {
+            let r = data[i], g = data[i+1], b = data[i+2];
+            r = Math.floor(r / 255 * (levels-1)) * (255 / (levels-1));
+            g = Math.floor(g / 255 * (levels-1)) * (255 / (levels-1));
+            b = Math.floor(b / 255 * (levels-1)) * (255 / (levels-1));
+            r = Math.min(255, r * 1.2);
+            g = Math.min(255, g * 1.1);
+            b = Math.min(255, b * 0.9);
+            data[i] = r;
+            data[i+1] = g;
+            data[i+2] = b;
+        }
+        return pixelData;
+    }
+
+    function drawToCanvas(imgData, targetCanvas, size) {
+        const w = imgData.width;
+        const h = imgData.height;
+        const temp = document.createElement('canvas');
+        temp.width = w;
+        temp.height = h;
+        temp.getContext('2d').putImageData(imgData, 0, 0);
+        const ctx = targetCanvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, size, size);
+        ctx.drawImage(temp, 0, 0, size, size);
+    }
+
+    function makeTransparent(pixelData, targetRgb, tolerance) {
+        const data = pixelData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i+1], b = data[i+2];
+            const diff = Math.abs(r - targetRgb[0]) + Math.abs(g - targetRgb[1]) + Math.abs(b - targetRgb[2]);
+            if (diff < tolerance) {
+                data[i+3] = 0;
+            }
+        }
+        return pixelData;
+    }
+
+    async function refreshAnimation() {
+        if (!currentPixelImageData) return;
+        stopAnimation();
+        const action = actionSelect.value;
+        const frames = await generateFrames(action, 12);
+        currentFrames = frames;
+        startAnimation(frames);
+    }
+
+    function repixelize() {
+        if (!currentRawSelection) { 
+            showStatus("请先框选并点击「像素化」"); 
+            return; 
+        }
+        const pxSize = parseInt(pixelSizeSlider.value);
+        const quant = parseInt(quantizeSlider.value);
+        const newData = pixelateWithSettings(currentRawSelection, pxSize, quant);
+        currentPixelImageData = newData;
+        for (let i = 3; i < currentPixelImageData.data.length; i += 4) currentPixelImageData.data[i] = 255;
+        drawToCanvas(currentPixelImageData, characterCanvas, 128);
+        refreshAnimation();
+    }
+
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file || !file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+                originalImageElement = img;
+                selection.active = false;
+                redrawDisplay();
+                cropBtn.disabled = false;
+                currentRawSelection = null;
+                currentPixelImageData = null;
+                showStatus("图片已上传！请框选主体", false);
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    cropBtn.addEventListener('click', () => {
+        if (!originalImageElement || !selection.active) {
+            showStatus("请框选主体区域");
+            return;
+        }
+        const clean = getCleanSelection();
+        if (!clean) {
+            showStatus("选区无效");
+            return;
+        }
+        currentRawSelection = clean;
+        const pxSize = parseInt(pixelSizeSlider.value);
+        const quant = parseInt(quantizeSlider.value);
+        const pixelated = pixelateWithSettings(clean, pxSize, quant);
+        currentPixelImageData = pixelated;
+        for (let i = 3; i < currentPixelImageData.data.length; i += 4) currentPixelImageData.data[i] = 255;
+        drawToCanvas(currentPixelImageData, characterCanvas, 128);
+        refreshAnimation();
+        showStatus("像素化完成！", false);
+    });
+    repixelBtn.addEventListener('click', repixelize);
+
+    characterCanvas.addEventListener('click', async (e) => {
+        if (!currentPixelImageData) { showStatus("请先像素化"); return; }
+        const rect = characterCanvas.getBoundingClientRect();
+        const scaleX = 128 / rect.width;
+        const scaleY = 128 / rect.height;
+        const mx = (e.clientX - rect.left) * scaleX;
+        const my = (e.clientY - rect.top) * scaleY;
+        if (mx<0 || mx>=128 || my<0 || my>=128) return;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 128;
+        tempCanvas.height = 128;
+        tempCanvas.getContext('2d').drawImage(characterCanvas, 0, 0);
+        const pixel = tempCanvas.getContext('2d').getImageData(mx, my, 1, 1).data;
+        const tolerance = parseInt(toleranceSlider.value);
+        const newData = makeTransparent(currentPixelImageData, [pixel[0], pixel[1], pixel[2]], tolerance);
+        currentPixelImageData = newData;
+        drawToCanvas(currentPixelImageData, characterCanvas, 128);
+        await refreshAnimation();
+    });
+
+    // ========== 核心：生成透明背景帧（仅角色，无页面元素）==========
+    async function generateFrames(action, frameCount = 12) {
+        if (!currentPixelImageData) return [];
+        const charW = currentPixelImageData.width;
+        const charH = currentPixelImageData.height;
+        const frames = [];
+        const size = GIF_SIZE;
+        
+        // 创建角色canvas（只绘制一次）
+        const charCanvas = document.createElement('canvas');
+        charCanvas.width = charW;
+        charCanvas.height = charH;
+        charCanvas.getContext('2d').putImageData(currentPixelImageData, 0, 0);
+        
+        for (let i = 0; i < frameCount; i++) {
+            const t = i / frameCount;
+            const angle = t * Math.PI * 2;
+            let offsetY = 0, offsetX = 0, scaleX = 1, scaleY = 1, rot = 0;
+            
+            switch(action) {
+                case 'idle':
+                    offsetY = Math.sin(angle * 1.5) * 8;
+                    scaleX = 1 + Math.sin(angle * 2) * 0.03;
+                    scaleY = 1 - Math.sin(angle * 2) * 0.02;
+                    break;
+                case 'walk':
+                    offsetY = Math.sin(angle * 2) * 5;
+                    rot = Math.sin(angle * 4) * 0.07;
+                    scaleX = 1 + Math.sin(angle * 4) * 0.04;
+                    break;
+                case 'jump':
+                    let jumpT = Math.sin(angle * 2);
+                    offsetY = jumpT > 0 ? -Math.abs(jumpT) * 25 : jumpT * 8;
+                    scaleX = 1 + Math.abs(Math.sin(angle * 2)) * 0.08;
+                    scaleY = 1 - Math.abs(Math.sin(angle * 2)) * 0.06;
+                    break;
+            }
+            
+            const frame = document.createElement('canvas');
+            frame.width = size;
+            frame.height = size;
+            const fCtx = frame.getContext('2d');
+            
+            // 关键：清除为透明背景（不绘制任何背景色）
+            fCtx.clearRect(0, 0, size, size);
+            
+            // 只绘制角色（应用动画变换）
+            fCtx.save();
+            fCtx.translate(size/2 + offsetX, size/2 + offsetY);
+            fCtx.rotate(rot);
+            fCtx.scale(scaleX, scaleY);
+            const drawSize = size * 0.5;
+            fCtx.drawImage(charCanvas, -drawSize/2, -drawSize/2, drawSize, drawSize);
+            fCtx.restore();
+            
+            frames.push(frame);
+        }
+        return frames;
+    }
+
+    function startAnimation(frames) {
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        if (!frames.length) return;
+        
+        let idx = 0, last = 0;
+        const delay = 100;
+        
+        function animate(now) {
+            if (!isAnimating) return;
+            if (!last) last = now;
+            if (now - last >= delay) {
+                // 预览区用格子背景
+                animCtx.clearRect(0, 0, GIF_SIZE, GIF_SIZE);
+                animCtx.drawImage(frames[idx], 0, 0, GIF_SIZE, GIF_SIZE);
+                idx = (idx + 1) % frames.length;
+                last = now;
+            }
+            animFrameId = requestAnimationFrame(animate);
+        }
+        isAnimating = true;
+        animFrameId = requestAnimationFrame(animate);
+    }
+    
+    function stopAnimation() {
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        isAnimating = false;
+    }
+
+    playAnimBtn.addEventListener('click', async () => {
+        if (!currentPixelImageData) { showStatus("请先像素化"); return; }
+        await refreshAnimation();
+    });
+
+    // ========== 下载透明GIF（仅角色，无背景）==========
+    downloadGifBtn.addEventListener('click', async () => {
+        if (!currentFrames.length) { 
+            showStatus("请先播放动画生成帧"); 
+            return; 
+        }
+        if (typeof GIF === 'undefined') { 
+            showStatus('GIF库加载失败，请刷新重试');
+            return; 
+        }
+        
+        showProgress(10);
+        downloadGifBtn.disabled = true;
+        downloadGifBtn.textContent = '⏳ 生成中...';
+        
+        try {
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: GIF_SIZE,
+                height: GIF_SIZE,
+                transparent: true,      // 启用透明
+                background: null,       // 无背景色
+                workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+            });
+            
+            for (let i = 0; i < currentFrames.length; i++) {
+                gif.addFrame(currentFrames[i], { 
+                    delay: 100, 
+                    copy: true
+                });
+                showProgress(10 + (i / currentFrames.length) * 80);
+            }
+            
+            const blob = await new Promise((res, rej) => {
+                let done = false;
+                gif.on('finished', b => { done = true; res(b); });
+                gif.on('error', e => rej(e));
+                gif.render();
+                setTimeout(() => { if (!done) rej(new Error("生成超时")); }, 30000);
+            });
+            
+            showProgress(100);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clawd_${actionSelect.value}_transparent.gif`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showStatus('透明GIF已保存！只有角色，无背景', false);
+        } catch(e) {
+            showStatus(`GIF生成失败: ${e.message}`);
+        } finally {
+            downloadGifBtn.disabled = false;
+            downloadGifBtn.textContent = '📥 透明GIF (仅角色)';
+        }
+    });
+
+    // 下载透明PNG
+    downloadPngBtn.addEventListener('click', () => {
+        if (!currentPixelImageData) { 
+            showStatus("请先像素化"); 
+            return; 
+        }
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = currentPixelImageData.width;
+        canvas.height = currentPixelImageData.height;
+        const ctx = canvas.getContext('2d');
+        ctx.putImageData(currentPixelImageData, 0, 0);
+        
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clawd_${Date.now()}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showStatus('PNG已保存！', false);
+        }, 'image/png');
+    });
+
+    // 检查GIF库
+    window.addEventListener('load', () => {
+        if (typeof GIF === 'undefined') {
+            console.warn('GIF.js 未加载');
+        }
+    });
+</script>
+</body>
+</html>
