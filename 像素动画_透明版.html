@@ -768,7 +768,7 @@
     });
 
     // ========== 核心：生成透明背景帧（仅角色，无页面元素）==========
-    async function generateFrames(action, frameCount = 12) {
+    async function generateFrames(action, frameCount = 8) {
         if (!currentPixelImageData) return [];
         const charW = currentPixelImageData.width;
         const charH = currentPixelImageData.height;
@@ -863,58 +863,100 @@
     // ========== 下载透明GIF（仅角色，无背景）==========
     downloadGifBtn.addEventListener('click', async () => {
         if (!currentFrames.length) { 
-            showStatus("请先播放动画生成帧"); 
+            showStatus("请先点击「▶️ 播放」生成动画帧"); 
             return; 
         }
         if (typeof GIF === 'undefined') { 
-            showStatus('GIF库加载失败，请刷新重试');
+            showStatus('GIF库加载失败，请检查网络后刷新页面');
             return; 
         }
         
-        showProgress(10);
+        showProgress(5);
         downloadGifBtn.disabled = true;
-        downloadGifBtn.textContent = '⏳ 生成中...';
+        downloadGifBtn.textContent = '⏳ 准备中...';
         
         try {
+            // 创建内联 worker 避免跨域问题
+            const workerScript = `
+                importScripts('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+            `;
+            const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(workerBlob);
+            
             const gif = new GIF({
-                workers: 2,
-                quality: 10,
+                workers: 1,
+                quality: 8,
                 width: GIF_SIZE,
                 height: GIF_SIZE,
-                transparent: true,      // 启用透明
-                background: null,       // 无背景色
-                workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+                transparent: '0x000000',
+                background: '#000000',
+                workerScript: workerUrl
             });
             
+            showProgress(10);
+            downloadGifBtn.textContent = '⏳ 添加帧...';
+            
+            // 逐帧添加，显示进度
             for (let i = 0; i < currentFrames.length; i++) {
-                gif.addFrame(currentFrames[i], { 
-                    delay: 100, 
-                    copy: true
-                });
-                showProgress(10 + (i / currentFrames.length) * 80);
+                gif.addFrame(currentFrames[i], { delay: 100, copy: true });
+                showProgress(10 + Math.floor((i / currentFrames.length) * 60));
+                await new Promise(r => setTimeout(r, 10)); // 让UI更新
             }
             
+            showProgress(70);
+            downloadGifBtn.textContent = '⏳ 渲染中...';
+            
             const blob = await new Promise((res, rej) => {
-                let done = false;
-                gif.on('finished', b => { done = true; res(b); });
-                gif.on('error', e => rej(e));
-                gif.render();
-                setTimeout(() => { if (!done) rej(new Error("生成超时")); }, 30000);
+                let settled = false;
+                
+                gif.on('finished', (b) => {
+                    if (!settled) {
+                        settled = true;
+                        res(b);
+                    }
+                });
+                
+                gif.on('error', (e) => {
+                    if (!settled) {
+                        settled = true;
+                        rej(e);
+                    }
+                });
+                
+                gif.on('progress', (p) => {
+                    showProgress(70 + Math.floor(p * 30));
+                });
+                
+                setTimeout(() => {
+                    gif.render();
+                }, 100);
+                
+                // 超时处理
+                setTimeout(() => {
+                    if (!settled) {
+                        settled = true;
+                        rej(new Error("生成超时，请减少帧数或刷新重试"));
+                    }
+                }, 45000);
             });
             
             showProgress(100);
+            
+            // 下载文件
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `clawd_${actionSelect.value}_transparent.gif`;
+            a.download = `clawd_${actionSelect.value}_${Date.now()}.gif`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            URL.revokeObjectURL(workerUrl);
             
-            showStatus('透明GIF已保存！只有角色，无背景', false);
+            showStatus(`✅ GIF已保存！文件名: ${a.download}`, false);
         } catch(e) {
-            showStatus(`GIF生成失败: ${e.message}`);
+            console.error('GIF生成错误:', e);
+            showStatus(`❌ GIF生成失败: ${e.message || '未知错误'}`);
         } finally {
             downloadGifBtn.disabled = false;
             downloadGifBtn.textContent = '📥 透明GIF (仅角色)';
