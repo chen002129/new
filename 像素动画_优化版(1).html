@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Claude 像素工坊 | GIF导出版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', 'Press Start 2P', monospace;
+        }
+        body {
+            background: #1a2a32;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            background: #fef2dc;
+            border-radius: 2rem;
+            box-shadow: 12px 12px 0 #b95f2c;
+            padding: 1.5rem;
+            border: 3px solid #ffcd94;
+        }
+        h1 {
+            font-size: 1.5rem;
+            text-align: center;
+            color: #e25822;
+            text-shadow: 3px 3px 0 #ffcd94;
+            background: #fff0c0;
+            display: inline-block;
+            width: auto;
+            margin: 0 auto 0.5rem;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+        }
+        .sub {
+            text-align: center;
+            font-size: 0.65rem;
+            background: #2c5a6e;
+            color: #ffe0a0;
+            display: inline-block;
+            padding: 0.2rem 1rem;
+            border-radius: 2rem;
+            margin-bottom: 1rem;
+        }
+        .two-columns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+        }
+        .editor-card {
+            background: #fff5e6;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            flex: 1;
+            min-width: 280px;
+            border: 2px solid #e25822;
+        }
+        .canvas-area {
+            background: #d9cba3;
+            border-radius: 1rem;
+            padding: 0.5rem;
+            text-align: center;
+        }
+        canvas {
+            background: #8bcb8c;
+            border-radius: 0.8rem;
+            box-shadow: 0 0 0 3px #ffcd94;
+            max-width: 100%;
+            cursor: crosshair;
+            display: block;
+            margin: 0 auto;
+        }
+        #characterCanvas {
+            cursor: pointer;
+        }
+        .info-text {
+            font-size: 0.7rem;
+            margin: 0.5rem 0;
+            color: #a55a2a;
+            text-align: center;
+        }
+        button {
+            background: #e25822;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            font-family: monospace;
+            box-shadow: 0 3px 0 #7e3a1a;
+            margin: 0.2rem;
+            transition: all 0.1s;
+        }
+        button:hover {
+            background: #ff6b35;
+        }
+        button.secondary {
+            background: #5f7f8c;
+            box-shadow: 0 3px 0 #2c4a5e;
+        }
+        button.secondary:hover {
+            background: #7a9aa8;
+        }
+        button.success {
+            background: #27ae60;
+            box-shadow: 0 3px 0 #1e8449;
+        }
+        button.success:hover {
+            background: #2ecc71;
+        }
+        button:disabled {
+            background: #95a5a6;
+            box-shadow: 0 3px 0 #7f8c8d;
+            cursor: not-allowed;
+        }
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #7e3a1a;
+        }
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+        select {
+            background: #fef0c0;
+            border: 2px solid #e25822;
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .pixel-animation {
+            background: #5c9e5e;
+            border-radius: 1rem;
+            padding: 0.8rem;
+            text-align: center;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            justify-content: center;
+            margin: 0.8rem 0;
+            flex-wrap: wrap;
+        }
+        .slider-row label {
+            font-size: 0.7rem;
+            color: #a55a2a;
+        }
+        input[type="range"] {
+            width: 160px;
+            cursor: pointer;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.6rem;
+            margin-top: 1rem;
+            color: #9e7a56;
+        }
+        .error-msg {
+            color: #c0392b;
+            background: #ffddcc;
+            padding: 0.4rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .success-msg {
+            color: #27ae60;
+            background: #d5f5e3;
+            padding: 0.4rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .download-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+            display: none;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #e25822;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="text-align: center;">
+        <h1>◢ CLAUDE PIXEL LAB ◣</h1>
+        <div class="sub">✦ 稳定框选 ✦ GIF导出 ✦ PNG保存 ✦ 高清像素动画</div>
+    </div>
+
+    <div class="two-columns">
+        <!-- 左侧 -->
+        <div class="editor-card">
+            <div class="canvas-area">
+                <canvas id="sourceCanvas" width="320" height="320"></canvas>
+            </div>
+            <div class="info-text">
+                📸 上传图片 → 鼠标拖拽框选主体 → 点击「像素化」
+            </div>
+            <div style="display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+                <button id="uploadBtn">📤 上传图片</button>
+                <button id="cropBtn" class="secondary" disabled>🎨 像素化</button>
+                <button id="resetCropBtn" class="secondary">🗑️ 重置选区</button>
+                <input type="file" id="fileInput" accept="image/*" style="display:none">
+            </div>
+            <div class="slider-row">
+                <label>🔲 像素块大小:</label>
+                <input type="range" id="pixelSizeSlider" min="8" max="128" step="4" value="32">
+                <span id="pixelSizeValue" style="font-size:0.7rem;">32px</span>
+            </div>
+            <div class="slider-row">
+                <label>🎨 量化强度:</label>
+                <input type="range" id="quantizeSlider" min="2" max="8" step="1" value="4">
+                <span id="quantizeValue" style="font-size:0.7rem;">4级</span>
+            </div>
+            <div class="info-text" style="font-size:0.65rem;">
+                💡 调整滑块后点击「重新像素化」更新效果
+            </div>
+            <div style="display: flex; justify-content: center;">
+                <button id="repixelBtn" class="secondary">🔄 重新像素化</button>
+            </div>
+        </div>
+
+        <!-- 右侧 -->
+        <div class="editor-card">
+            <div class="canvas-area">
+                <canvas id="characterCanvas" width="128" height="128" style="background:#fbe5b9; image-rendering:pixelated;"></canvas>
+            </div>
+            <div class="info-text">✨ 纯净像素角色 | 👆 点击图片去除背景（下方调节容差）</div>
+            <div class="slider-row">
+                <label>🧹 去背景容差:</label>
+                <input type="range" id="toleranceSlider" min="0" max="100" step="5" value="30">
+                <span id="toleranceValue" style="font-size:0.7rem;">30</span>
+            </div>
+            <div class="action-bar">
+                <select id="actionSelect">
+                    <option value="idle">⭐ 待机 (轻盈浮动)</option>
+                    <option value="walk">🚶 行走 (左右摇摆)</option>
+                    <option value="jump">🦘 跳跃 (弹跳)</option>
+                </select>
+                <button id="playAnimBtn">🎬 播放动画</button>
+            </div>
+            
+            <!-- 下载选项 -->
+            <div class="download-options">
+                <button id="downloadGifBtn" class="success">📥 下载 GIF 动画</button>
+                <button id="downloadPngBtn" class="secondary">🖼️ 保存 PNG 图片</button>
+                <button id="downloadFrameBtn" class="secondary">🎞️ 保存当前帧</button>
+            </div>
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="pixel-animation">
+                <canvas id="animCanvas" width="400" height="400" style="width:100%; max-width:400px; aspect-ratio:1/1; background:#5c9e5e; border-radius:0.8rem; image-rendering:pixelated;"></canvas>
+                <div style="font-size:0.6rem; margin-top:0.3rem;">🎞️ 高清像素动画预览</div>
+            </div>
+            
+            <div id="statusMsg" class="error-msg"></div>
+            <div id="successMsg" class="success-msg"></div>
+        </div>
+    </div>
+    <footer>⚡ 支持GIF导出、PNG保存、透明背景 | 点击即可下载</footer>
+</div>
+
+<!-- GIF.js 库 -->
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+<script>
+    (function(){
+        // ---------- DOM ----------
+        const sourceCanvas = document.getElementById('sourceCanvas');
+        const srcCtx = sourceCanvas.getContext('2d');
+        const characterCanvas = document.getElementById('characterCanvas');
+        const charCtx = characterCanvas.getContext('2d');
+        const animCanvas = document.getElementById('animCanvas');
+        const animCtx = animCanvas.getContext('2d');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput = document.getElementById('fileInput');
+        const cropBtn = document.getElementById('cropBtn');
+        const resetCropBtn = document.getElementById('resetCropBtn');
+        const repixelBtn = document.getElementById('repixelBtn');
+        const pixelSizeSlider = document.getElementById('pixelSizeSlider');
+        const pixelSizeValue = document.getElementById('pixelSizeValue');
+        const quantizeSlider = document.getElementById('quantizeSlider');
+        const quantizeValue = document.getElementById('quantizeValue');
+        const toleranceSlider = document.getElementById('toleranceSlider');
+        const toleranceValue = document.getElementById('toleranceValue');
+        const actionSelect = document.getElementById('actionSelect');
+        const playAnimBtn = document.getElementById('playAnimBtn');
+        const downloadGifBtn = document.getElementById('downloadGifBtn');
+        const downloadPngBtn = document.getElementById('downloadPngBtn');
+        const downloadFrameBtn = document.getElementById('downloadFrameBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        const successMsg = document.getElementById('successMsg');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+
+        // ---------- 核心状态 ----------
+        let originalImageElement = null;
+        let currentRawSelection = null;
+        let currentPixelImageData = null;
+        let currentFrames = [];
+        let animFrameId = null;
+        let isAnimating = false;
+
+        let selection = { x: 0, y: 0, w: 0, h: 0, active: false };
+        let isDragging = false;
+        let startX, startY;
+
+        const GIF_SIZE = 400;
+        animCanvas.width = GIF_SIZE;
+        animCanvas.height = GIF_SIZE;
+
+        // 显示状态消息
+        function showStatus(msg, isError = true) {
+            if (isError) {
+                statusMsg.textContent = msg;
+                statusMsg.style.display = 'block';
+                successMsg.style.display = 'none';
+            } else {
+                successMsg.textContent = msg;
+                successMsg.style.display = 'block';
+                statusMsg.style.display = 'none';
+            }
+            setTimeout(() => {
+                statusMsg.style.display = 'none';
+                successMsg.style.display = 'none';
+            }, 5000);
+        }
+
+        // 显示进度
+        function showProgress(percent) {
+            progressBar.style.display = 'block';
+            progressFill.style.width = percent + '%';
+            if (percent >= 100) {
+                setTimeout(() => { progressBar.style.display = 'none'; }, 500);
+            }
+        }
+
+        // 滑块显示
+        pixelSizeSlider.addEventListener('input', () => pixelSizeValue.innerText = pixelSizeSlider.value + 'px');
+        quantizeSlider.addEventListener('input', () => quantizeValue.innerText = quantizeSlider.value + '级');
+        toleranceSlider.addEventListener('input', () => toleranceValue.innerText = toleranceSlider.value);
+
+        // ---------- 绘制原始图片 + 选框 ----------
+        function redrawDisplay() {
+            if (!originalImageElement) return;
+            const img = originalImageElement;
+            const w = img.width, h = img.height;
+            const scale = Math.min(320 / w, 320 / h);
+            const dw = w * scale;
+            const dh = h * scale;
+            srcCtx.clearRect(0, 0, 320, 320);
+            srcCtx.fillStyle = "#8bcb8c";
+            srcCtx.fillRect(0, 0, 320, 320);
+            srcCtx.drawImage(img, (320 - dw) / 2, (320 - dh) / 2, dw, dh);
+            
+            if (selection.active && selection.w > 5 && selection.h > 5) {
+                srcCtx.save();
+                srcCtx.globalAlpha = 0.4;
+                srcCtx.fillStyle = "#ffaa66";
+                srcCtx.fillRect(selection.x, selection.y, selection.w, selection.h);
+                srcCtx.globalAlpha = 1;
+                srcCtx.strokeStyle = "#e25822";
+                srcCtx.lineWidth = 2;
+                srcCtx.setLineDash([5, 5]);
+                srcCtx.strokeRect(selection.x, selection.y, selection.w, selection.h);
+                srcCtx.restore();
+            }
+        }
+
+        // 获取鼠标坐标
+        function getMousePos(e) {
+            const rect = sourceCanvas.getBoundingClientRect();
+            const scaleX = sourceCanvas.width / rect.width;
+            const scaleY = sourceCanvas.height / rect.height;
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            let canvasX = (clientX - rect.left) * scaleX;
+            let canvasY = (clientY - rect.top) * scaleY;
+            canvasX = Math.min(Math.max(0, canvasX), sourceCanvas.width);
+            canvasY = Math.min(Math.max(0, canvasY), sourceCanvas.height);
+            return { x: canvasX, y: canvasY };
+        }
+
+        function onMouseDown(e) {
+            if (!originalImageElement) return;
+            e.preventDefault();
+            const pos = getMousePos(e);
+            startX = pos.x;
+            startY = pos.y;
+            isDragging = true;
+            selection.active = false;
+            redrawDisplay();
+        }
+
+        function onMouseMove(e) {
+            if (!isDragging || !originalImageElement) return;
+            const pos = getMousePos(e);
+            const x = Math.min(startX, pos.x);
+            const y = Math.min(startY, pos.y);
+            const w = Math.abs(pos.x - startX);
+            const h = Math.abs(pos.y - startY);
+            if (w > 5 && h > 5) {
+                selection = { x, y, w, h, active: true };
+            } else {
+                selection.active = false;
+            }
+            redrawDisplay();
+        }
+
+        function onMouseUp(e) {
+            isDragging = false;
+            if (selection.active && (selection.w < 10 || selection.h < 10)) {
+                selection.active = false;
+                redrawDisplay();
+            }
+        }
+
+        sourceCanvas.addEventListener('mousedown', onMouseDown);
+        sourceCanvas.addEventListener('mousemove', onMouseMove);
+        sourceCanvas.addEventListener('mouseup', onMouseUp);
+        sourceCanvas.addEventListener('touchstart', onMouseDown);
+        sourceCanvas.addEventListener('touchmove', onMouseMove);
+        sourceCanvas.addEventListener('touchend', onMouseUp);
+
+        resetCropBtn.addEventListener('click', () => {
+            selection.active = false;
+            redrawDisplay();
+        });
+
+        // ---------- 截取选区 ----------
+        function getCleanSelection() {
+            if (!originalImageElement || !selection.active) return null;
+            const { x, y, w, h } = selection;
+            if (w < 8 || h < 8) return null;
+            
+            const img = originalImageElement;
+            const scale = Math.min(320 / img.width, 320 / img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale;
+            const offsetX = (320 - dw) / 2;
+            const offsetY = (320 - dh) / 2;
+            
+            const imgX = (x - offsetX) / scale;
+            const imgY = (y - offsetY) / scale;
+            const imgW = w / scale;
+            const imgH = h / scale;
+            
+            const sx = Math.max(0, Math.min(imgX, img.width));
+            const sy = Math.max(0, Math.min(imgY, img.height));
+            const sw = Math.min(imgW, img.width - sx);
+            const sh = Math.min(imgH, img.height - sy);
+            if (sw < 4 || sh < 4) return null;
+            
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = sw;
+            tempCanvas.height = sh;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+            return tempCtx.getImageData(0, 0, sw, sh);
+        }
+
+        // ---------- 像素化算法 ----------
+        function pixelateWithSettings(imageData, targetSize, quantizeLevels) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = targetSize;
+            tempCanvas.height = targetSize;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.imageSmoothingEnabled = false;
+            const srcCanvas = document.createElement('canvas');
+            srcCanvas.width = imageData.width;
+            srcCanvas.height = imageData.height;
+            srcCanvas.getContext('2d').putImageData(imageData, 0, 0);
+            tempCtx.drawImage(srcCanvas, 0, 0, targetSize, targetSize);
+            let pixelData = tempCtx.getImageData(0, 0, targetSize, targetSize);
+            const data = pixelData.data;
+            const levels = Math.max(2, quantizeLevels);
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i], g = data[i+1], b = data[i+2];
+                r = Math.floor(r / 255 * (levels-1)) * (255 / (levels-1));
+                g = Math.floor(g / 255 * (levels-1)) * (255 / (levels-1));
+                b = Math.floor(b / 255 * (levels-1)) * (255 / (levels-1));
+                r = Math.min(255, r * 1.2);
+                g = Math.min(255, g * 1.1);
+                b = Math.min(255, b * 0.9);
+                data[i] = r;
+                data[i+1] = g;
+                data[i+2] = b;
+            }
+            const edgeData = new Uint8ClampedArray(data);
+            const edgeThreshold = quantizeLevels <= 3 ? 180 : (quantizeLevels <= 5 ? 150 : 120);
+            for (let y = 1; y < targetSize-1; y++) {
+                for (let x = 1; x < targetSize-1; x++) {
+                    const idx = (y * targetSize + x) * 4;
+                    let maxDiff = 0;
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            if (dx === 0 && dy === 0) continue;
+                            const nIdx = ((y+dy) * targetSize + (x+dx)) * 4;
+                            const diff = Math.abs(data[idx] - data[nIdx]) + Math.abs(data[idx+1] - data[nIdx+1]);
+                            maxDiff = Math.max(maxDiff, diff);
+                        }
+                    }
+                    if (maxDiff > edgeThreshold) {
+                        edgeData[idx] = 0;
+                        edgeData[idx+1] = 0;
+                        edgeData[idx+2] = 0;
+                    }
+                }
+            }
+            for (let i = 0; i < data.length; i++) data[i] = edgeData[i];
+            return pixelData;
+        }
+
+        function drawToCanvas(imgData, targetCanvas, size) {
+            const w = imgData.width;
+            const h = imgData.height;
+            const temp = document.createElement('canvas');
+            temp.width = w;
+            temp.height = h;
+            temp.getContext('2d').putImageData(imgData, 0, 0);
+            const ctx = targetCanvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, size, size);
+            ctx.drawImage(temp, 0, 0, size, size);
+        }
+
+        function makeTransparent(pixelData, targetRgb, tolerance) {
+            const data = pixelData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i+1], b = data[i+2];
+                const diff = Math.abs(r - targetRgb[0]) + Math.abs(g - targetRgb[1]) + Math.abs(b - targetRgb[2]);
+                data[i+3] = diff < tolerance ? 0 : 255;
+            }
+            return pixelData;
+        }
+
+        async function refreshAnimation() {
+            if (!currentPixelImageData) return;
+            stopAnimation();
+            const action = actionSelect.value;
+            const frames = await generateFrames(action, 12);
+            currentFrames = frames;
+            startAnimation(frames);
+        }
+
+        function repixelize() {
+            if (!currentRawSelection) { 
+                showStatus("请先框选并点击「像素化」"); 
+                return; 
+            }
+            const pxSize = parseInt(pixelSizeSlider.value);
+            const quant = parseInt(quantizeSlider.value);
+            const newData = pixelateWithSettings(currentRawSelection, pxSize, quant);
+            currentPixelImageData = newData;
+            for (let i = 3; i < currentPixelImageData.data.length; i += 4) currentPixelImageData.data[i] = 255;
+            drawToCanvas(currentPixelImageData, characterCanvas, 128);
+            refreshAnimation();
+        }
+
+        // 上传图片
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImageElement = img;
+                    selection.active = false;
+                    redrawDisplay();
+                    cropBtn.disabled = false;
+                    currentRawSelection = null;
+                    currentPixelImageData = null;
+                    statusMsg.style.display = 'none';
+                    showStatus("图片上传成功！请框选主体区域", false);
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        cropBtn.addEventListener('click', () => {
+            if (!originalImageElement || !selection.active || selection.w < 8 || selection.h < 8) {
+                showStatus("请框选主体区域");
+                return;
+            }
+            const clean = getCleanSelection();
+            if (!clean) {
+                showStatus("选区无效");
+                return;
+            }
+            currentRawSelection = clean;
+            const pxSize = parseInt(pixelSizeSlider.value);
+            const quant = parseInt(quantizeSlider.value);
+            const pixelated = pixelateWithSettings(clean, pxSize, quant);
+            currentPixelImageData = pixelated;
+            for (let i = 3; i < currentPixelImageData.data.length; i += 4) currentPixelImageData.data[i] = 255;
+            drawToCanvas(currentPixelImageData, characterCanvas, 128);
+            refreshAnimation();
+            showStatus("像素化完成！可以下载GIF或PNG了", false);
+        });
+        repixelBtn.addEventListener('click', repixelize);
+
+        characterCanvas.addEventListener('click', async (e) => {
+            if (!currentPixelImageData) { showStatus("请先像素化"); return; }
+            const rect = characterCanvas.getBoundingClientRect();
+            const scaleX = characterCanvas.width / rect.width;
+            const scaleY = characterCanvas.height / rect.height;
+            let cx, cy;
+            if (e.touches) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+            else { cx = e.clientX; cy = e.clientY; }
+            const mx = (cx - rect.left) * scaleX;
+            const my = (cy - rect.top) * scaleY;
+            if (mx<0 || mx>=characterCanvas.width || my<0 || my>=characterCanvas.height) return;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = characterCanvas.width;
+            tempCanvas.height = characterCanvas.height;
+            tempCanvas.getContext('2d').drawImage(characterCanvas, 0, 0);
+            const pixel = tempCanvas.getContext('2d').getImageData(mx, my, 1, 1).data;
+            const tolerance = parseInt(toleranceSlider.value);
+            const newData = makeTransparent(currentPixelImageData, [pixel[0], pixel[1], pixel[2]], tolerance);
+            currentPixelImageData = newData;
+            drawToCanvas(currentPixelImageData, characterCanvas, 128);
+            await refreshAnimation();
+        });
+
+        async function generateFrames(action, frameCount = 12) {
+            if (!currentPixelImageData) return [];
+            const charW = currentPixelImageData.width;
+            const charH = currentPixelImageData.height;
+            const frames = [];
+            const size = GIF_SIZE;
+            const charCanvas = document.createElement('canvas');
+            charCanvas.width = charW;
+            charCanvas.height = charH;
+            charCanvas.getContext('2d').putImageData(currentPixelImageData, 0, 0);
+            for (let i = 0; i < frameCount; i++) {
+                const t = i / frameCount;
+                const angle = t * Math.PI * 2;
+                let offsetY = 0, offsetX = 0, scaleX = 1, scaleY = 1, rot = 0;
+                switch(action) {
+                    case 'idle':
+                        offsetY = Math.sin(angle * 1.5) * 3;
+                        scaleX = 1 + Math.sin(angle * 2) * 0.03;
+                        scaleY = 1 - Math.sin(angle * 2) * 0.02;
+                        break;
+                    case 'walk':
+                        offsetY = Math.sin(angle * 2) * 2.5;
+                        rot = Math.sin(angle * 4) * 0.07;
+                        scaleX = 1 + Math.sin(angle * 4) * 0.04;
+                        break;
+                    case 'jump':
+                        let jumpT = Math.sin(angle * 2);
+                        offsetY = jumpT > 0 ? -Math.abs(jumpT) * 12 : jumpT * 4;
+                        scaleX = 1 + Math.abs(Math.sin(angle * 2)) * 0.08;
+                        scaleY = 1 - Math.abs(Math.sin(angle * 2)) * 0.06;
+                        break;
+                }
+                const frame = document.createElement('canvas');
+                frame.width = size;
+                frame.height = size;
+                const fCtx = frame.getContext('2d');
+                fCtx.fillStyle = "#5c9e5e";
+                fCtx.fillRect(0, 0, size, size);
+                fCtx.fillStyle = "#ffd966";
+                fCtx.fillRect(10, size-20, 40, 8);
+                fCtx.fillStyle = "#b85c1a";
+                fCtx.fillRect(25, size-28, 10, 10);
+                fCtx.save();
+                fCtx.translate(size/2 + offsetX, size/2 + offsetY);
+                fCtx.rotate(rot);
+                fCtx.scale(scaleX, scaleY);
+                const drawSize = size * 0.45;
+                fCtx.drawImage(charCanvas, -drawSize/2, -drawSize/2, drawSize, drawSize);
+                fCtx.restore();
+                frames.push(frame);
+                await new Promise(r => setTimeout(r, 5));
+            }
+            return frames;
+        }
+
+        function startAnimation(frames) {
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            if (!frames.length) return;
+            let idx = 0, last = 0;
+            const delay = 100;
+            function animate(now) {
+                if (!isAnimating) return;
+                if (!last) last = now;
+                if (now - last >= delay) {
+                    animCtx.clearRect(0, 0, GIF_SIZE, GIF_SIZE);
+                    animCtx.drawImage(frames[idx], 0, 0, GIF_SIZE, GIF_SIZE);
+                    idx = (idx + 1) % frames.length;
+                    last = now;
+                }
+                animFrameId = requestAnimationFrame(animate);
+            }
+            isAnimating = true;
+            animFrameId = requestAnimationFrame(animate);
+        }
+        function stopAnimation() {
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            isAnimating = false;
+        }
+
+        playAnimBtn.addEventListener('click', async () => {
+            if (!currentPixelImageData) { showStatus("请先像素化"); return; }
+            await refreshAnimation();
+        });
+
+        // ========== 下载功能 ==========
+        
+        // 1. 下载 GIF 动画
+        downloadGifBtn.addEventListener('click', async () => {
+            if (!currentFrames.length) { 
+                showStatus("请先播放动画生成帧"); 
+                return; 
+            }
+            if (typeof GIF === 'undefined') { 
+                showStatus('GIF库加载失败，请检查网络后刷新页面重试。');
+                return; 
+            }
+            
+            showProgress(10);
+            downloadGifBtn.disabled = true;
+            downloadGifBtn.textContent = '⏳ 生成中...';
+            
+            try {
+                // 创建 Blob URL 用于 worker
+                const workerScript = `
+                    importScripts('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+                `;
+                const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
+                const workerUrl = URL.createObjectURL(workerBlob);
+                
+                const gif = new GIF({
+                    workers: 2,
+                    quality: 10,
+                    width: GIF_SIZE,
+                    height: GIF_SIZE,
+                    workerScript: workerUrl
+                });
+                
+                showProgress(30);
+                
+                for (let i = 0; i < currentFrames.length; i++) {
+                    gif.addFrame(currentFrames[i], { delay: 100, copy: true });
+                    showProgress(30 + (i / currentFrames.length) * 50);
+                }
+                
+                const blob = await new Promise((res, rej) => {
+                    let done = false;
+                    gif.on('finished', b => { done = true; res(b); });
+                    gif.on('error', e => rej(e));
+                    gif.on('progress', p => showProgress(80 + p * 20));
+                    gif.render();
+                    setTimeout(() => { if (!done) rej(new Error("生成超时，请减少帧数或刷新重试")); }, 30000);
+                });
+                
+                showProgress(100);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pixel_animation_${actionSelect.value}_${Date.now()}.gif`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                URL.revokeObjectURL(workerUrl);
+                
+                showStatus(`GIF已保存！文件名: ${a.download}`, false);
+            } catch(e) {
+                showStatus(`GIF生成失败: ${e.message}`);
+                console.error(e);
+            } finally {
+                downloadGifBtn.disabled = false;
+                downloadGifBtn.textContent = '📥 下载 GIF 动画';
+            }
+        });
+
+        // 2. 下载 PNG 图片（当前像素角色，支持透明背景）
+        downloadPngBtn.addEventListener('click', () => {
+            if (!currentPixelImageData) { 
+                showStatus("请先像素化"); 
+                return; 
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = currentPixelImageData.width;
+            canvas.height = currentPixelImageData.height;
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(currentPixelImageData, 0, 0);
+            
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pixel_character_${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showStatus('PNG图片已保存！', false);
+            }, 'image/png');
+        });
+
+        // 3. 下载当前动画帧（预览区域当前显示的画面）
+        downloadFrameBtn.addEventListener('click', () => {
+            if (!currentFrames.length) { 
+                showStatus("请先播放动画"); 
+                return; 
+            }
+            
+            // 获取当前显示的帧
+            const canvas = document.createElement('canvas');
+            canvas.width = GIF_SIZE;
+            canvas.height = GIF_SIZE;
+            const ctx = canvas.getContext('2d');
+            
+            // 绘制背景
+            ctx.fillStyle = "#5c9e5e";
+            ctx.fillRect(0, 0, GIF_SIZE, GIF_SIZE);
+            ctx.fillStyle = "#ffd966";
+            ctx.fillRect(10, GIF_SIZE-20, 40, 8);
+            ctx.fillStyle = "#b85c1a";
+            ctx.fillRect(25, GIF_SIZE-28, 10, 10);
+            
+            // 复制当前动画帧
+            ctx.drawImage(animCanvas, 0, 0);
+            
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pixel_frame_${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showStatus('当前帧已保存！', false);
+            }, 'image/png');
+        });
+
+        // 检查 GIF.js 是否加载
+        window.addEventListener('load', () => {
+            if (typeof GIF === 'undefined') {
+                console.warn('GIF.js 未加载，GIF功能将不可用');
+            } else {
+                console.log('GIF.js 已加载，GIF功能可用');
+            }
+        });
+    })();
+</script>
+</body>
+</html>
